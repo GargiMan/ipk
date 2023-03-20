@@ -1,3 +1,14 @@
+/**
+ * @file main.c
+ * @author Marek Gergel (xgerge01)
+ * @brief main function for client side communication
+ * @version 0.1
+ * @date 2023-03-19
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +19,16 @@
 char *host;
 int port = 0;
 int mode = 0;
+
+void print_help()
+{
+    printf("Usage: ipkcp -h <host> -p <port> -m <mode>\n");
+    printf("Options:\n");
+    printf("  -h <host>    server host name or IPv4 address\n");
+    printf("  -p <port>    server port number\n");
+    printf("  -m <mode>    communication mode, allowed modes are 'udp' or 'tcp'\n");
+    printf("  --help       print this help and exit program\n");
+}
 
 void parse_args(int argc, char *argv[])
 {
@@ -24,7 +45,7 @@ void parse_args(int argc, char *argv[])
 
             if (*endptr != '\0' || port < 1 || port > 65535)
             {
-                error_exit(invalidArgument, "Invalid port, port must be a max 5 digit integer in range (0 - 65535).\n");
+                error_exit(invalidArgument, "Invalid port, port must be a max 5 digit integer in range (0 - 65535)\n");
             }
         }
         else if (strcmp(argv[i], "-m") == 0 && i < argc - 1)
@@ -40,18 +61,25 @@ void parse_args(int argc, char *argv[])
             }
             else
             {
-                error_exit(invalidArgument, "Invalid mode, allowed modes are 'udp' or 'tcp'.\n");
+                error_exit(invalidArgument, "Invalid mode, allowed modes are 'udp' or 'tcp'\n");
             }
+        }
+        else if (strcmp(argv[i], "--help") == 0)
+        {
+            print_help();
+            exit(0);
         }
         else
         {
-            error_exit(invalidArgument, "Usage: %s -h <host> -p <port> -m <mode>\n", argv[0]);
+            print_help();
+            error_exit(invalidArgument, "Unknown argument '%s'\n", argv[i]);
         }
     }
 
     if (host == NULL || port == 0 || mode == 0)
     {
-        error_exit(invalidArgument, "Usage: %s -h <host> -p <port> -m <mode>\n", argv[0]);
+        print_help();
+        error_exit(invalidArgument, "Options -h, -p and -m are required\n");
     }
 }
 

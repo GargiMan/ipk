@@ -24,9 +24,12 @@ struct sockaddr_in server_address;
 void sig_handler()
 {
     char response[BUFFFER_SIZE] = "";
-    get_response("BYE\n", response);
-    printf("%s", response);
-    // shutdown(client_socket, SHUT_RDWR);
+    if (client_mode == MODE_TCP)
+    {
+        get_response("BYE\n", response);
+        printf("%s", response);
+    }
+    shutdown(client_socket, SHUT_RDWR);
     client_close();
     exit(0);
 }
@@ -72,13 +75,13 @@ void client_close()
 void get_tcp_response(char *request, char *response)
 {
     // Send request to server
-    if (send(client_socket, request, strlen(request), 0) == -1)
+    while (send(client_socket, request, strlen(request), 0) == -1)
     {
         warning_print("Send failed.\n");
     }
 
     // Receive response from server
-    if (recv(client_socket, response, BUFFFER_SIZE, 0) == -1)
+    while (recv(client_socket, response, BUFFFER_SIZE, 0) == -1)
     {
         warning_print("Receive failed.\n");
     }
@@ -98,21 +101,21 @@ void get_udp_response(char *request, char *response)
     request_packet[0] = OP_REQ;
 
     // Send request to server
-    if (sendto(client_socket, request_packet, request_packet_len, 0, (struct sockaddr *)&server_address, serverlen) == -1)
+    while (sendto(client_socket, request_packet, request_packet_len, 0, (struct sockaddr *)&server_address, serverlen) == -1)
     {
         warning_print("Send failed.\n");
     }
 
     // Receive response from server
-    if (recvfrom(client_socket, response_packet, BUFFFER_SIZE, 0, (struct sockaddr *)&server_address, &serverlen) == -1)
+    while (recvfrom(client_socket, response_packet, BUFFFER_SIZE, 0, (struct sockaddr *)&server_address, &serverlen) == -1)
     {
         warning_print("Receive failed.\n");
     }
 
     // Read response packet
-    char op_code;
-    char status_code;
-    char length;
+    char op_code = 0;
+    char status_code = 0;
+    char length = 0;
     sscanf(response_packet, "%c", &op_code);
     sscanf(response_packet + 1, "%c", &status_code);
     sscanf(response_packet + 2, "%c", &length);
@@ -126,7 +129,6 @@ void get_udp_response(char *request, char *response)
     // Read response message
     if (status_code != STATUS_OK)
     {
-        warning_print("Server error.\n");
         strcat(response, "ERR: ");
         strcat(response, response_packet + 3);
         strcat(response, "\n");
