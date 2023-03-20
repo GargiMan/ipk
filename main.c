@@ -2,16 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include "resources.h"
 #include "error.h"
+#include "client.h"
 
-#define UDP 1
-#define TCP 2
-
-extern char *host;
-extern char *port;
+char *host;
+int port = 0;
 int mode = 0;
 
 void parse_args(int argc, char *argv[])
@@ -21,42 +16,27 @@ void parse_args(int argc, char *argv[])
         if (strcmp(argv[i], "-h") == 0 && i < argc - 1)
         {
             host = argv[++i];
-
-            struct in_addr ipv4;
-            int valid = inet_pton(AF_INET, host, &ipv4);
-
-            if (!valid)
-            {
-                error_exit(invalidArgument, "Invalid host, host must be a valid IPv4 address.\n");
-            }
         }
         else if (strcmp(argv[i], "-p") == 0 && i < argc - 1)
         {
             char *endptr;
-            long port_l = strtol(argv[++i], &endptr, 10);
+            port = (int)strtol(argv[++i], &endptr, 10);
 
-            if (*endptr != '\0' || port_l < 1 || port_l > 65535)
+            if (*endptr != '\0' || port < 1 || port > 65535)
             {
                 error_exit(invalidArgument, "Invalid port, port must be a max 5 digit integer in range (0 - 65535).\n");
             }
-
-            port = malloc(sizeof(char) * (snprintf(NULL, 0, "%ld", port_l) + 1));
-            if (port == NULL)
-            {
-                error_exit(internalError, "Memory allocation failed.\n");
-            }
-            sprintf(port, "%ld", port_l);
         }
         else if (strcmp(argv[i], "-m") == 0 && i < argc - 1)
         {
             i++;
             if (strcasecmp(argv[i], "tcp") == 0)
             {
-                mode = TCP;
+                mode = MODE_TCP;
             }
             else if (strcasecmp(argv[i], "udp") == 0)
             {
-                mode = UDP;
+                mode = MODE_UDP;
             }
             else
             {
@@ -69,23 +49,37 @@ void parse_args(int argc, char *argv[])
         }
     }
 
-    if (host == NULL || port == NULL || mode == 0)
+    if (host == NULL || port == 0 || mode == 0)
     {
         error_exit(invalidArgument, "Usage: %s -h <host> -p <port> -m <mode>\n", argv[0]);
     }
+}
+
+void calculator_protocol()
+{
+    client_init(host, port, mode);
+
+    char request[BUFFFER_SIZE] = "";
+    while (fgets(request, BUFFFER_SIZE, stdin) != NULL)
+    {
+        char response[BUFFFER_SIZE] = "";
+        get_response(request, response);
+        printf("%s", response);
+
+        if (mode == MODE_TCP && strcmp(response, "BYE\n") == 0)
+        {
+            break;
+        }
+    }
+
+    client_close();
 }
 
 int main(int argc, char *argv[])
 {
     parse_args(argc, argv);
 
-    printf("Host: %s\n", host);
-    printf("Port: %s\n", port);
-    printf("Mode: %s\n", mode == 2 ? "TCP" : "UDP");
-
-    // TODO read from stdin and send to server
-
-    free_resources();
+    calculator_protocol();
 
     return 0;
 }

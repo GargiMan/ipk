@@ -15,11 +15,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include "resources.h"
 
 typedef enum errorCodes
 {
     invalidArgument = 1,
+    socketError = 2,
+    signalError = 3,
     internalError = 99
 } errorCodes_t;
 

@@ -27,7 +27,6 @@ void error_exit(errorCodes_t errcode, char *msg, ...)
     fprintf(stderr, "Error: ");
     vfprintf(stderr, msg, args);
     va_end(args);
-    free_resources();
     exit(errcode);
 }
 

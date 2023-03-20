@@ -4,12 +4,16 @@
 LOGIN = xgerge01
 PROG_NAME = ipkcp
 # -g for debug , -O2 for optimization (0 - disabled, 1 - less, 2 - more)
-CCFLAGS := -g -O0 -Wall -Wextra -std=c17 -pedantic
-SRC_FILES := $(wildcard *.c)
-HEADER_FILES := $(wildcard *.h)
-#TODO check on test server
-OBJ_FILES := $(patsubst %.c,%.o,$(SRC_FILES))
+CCFLAGS := -g -O2 -Wall -Wextra -std=c17 -pedantic
+HEAD_FILES := client.h error.h
+SRC_FILES := client.c error.c main.c
+OBJ_FILES := client.o error.o main.o
 TESTS := $(wildcard testData/*)
+
+# -lws2_32 for windows sockets
+ifeq ($(OS),Windows_NT)
+  	CCFLAGS+= -lws2_32
+endif
 
 .PHONY: all program clean zip
 
