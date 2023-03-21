@@ -16,6 +16,23 @@
 #include <string.h>
 #include <strings.h>
 #include <stdbool.h>
+#include "error.h"
+
+#if defined(_WIN32) || defined(_WIN64) // windows
+
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <process.h>
+
+#define close(a) (void)closesocket(a)
+#define signal(a, b) SetConsoleCtrlHandler(b, true)
+#define socklen_t int
+#define SIGERR 0
+#define SIGINT CTRL_C_EVENT
+
+#else // unix
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netdb.h>
@@ -23,7 +40,8 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <signal.h>
-#include "error.h"
+
+#endif // _WIN32 || _WIN64
 
 #define BUFFFER_SIZE 255
 
