@@ -4,30 +4,36 @@
 LOGIN = xgerge01
 PROG_NAME = ipkcpc
 # -g for debug , -O2 for optimization (0 - disabled, 1 - less, 2 - more)
-CCFLAGS := -g -O2 -Wall -Wextra -std=c17 -pedantic
-HEAD_FILES := client.h error.h
-SRC_FILES := client.c error.c main.c
-OBJ_FILES := client.o error.o main.o
-TESTS := $(wildcard testData/*)
+CCFLAGS := -O2 -Wall -Wextra -std=c17 -pedantic
+SRC_FILES := $(wildcard *.c)
+TESTS_TCP := $(wildcard testData/tcp*.in)
+TESTS_UDP := $(wildcard testData/udp*.in)
 
 # -lws2_32 for windows sockets
 ifeq ($(OS),Windows_NT)
-  	CCFLAGS+= -lws2_32
+  	CCFLAGS += -lws2_32
 endif
 
-.PHONY: all program clean zip
+.PHONY: all program test-tcp test-udp clean zip
 
 all: program
 
 %.o: %.c
 	gcc $(CCFLAGS) -c $< -o $@
 
-program: $(OBJ_FILES)
+program: $(SRC_FILES:%.c=%.o)
 	gcc $(CCFLAGS) $^ -o $(PROG_NAME)
+
+test-tcp:
+	@for test in $(TESTS_TCP:%.in=%); do ./$(PROG_NAME) -h localhost -p 2023 -m tcp <$$test.in >$$test.out; if diff -q $$test.out $$test.ref >/dev/null; then echo "Test OK : $$test"; else echo "Test FAIL : $$test"; fi done
+
+test-udp:
+	@for test in $(TESTS_UDP:%.in=%); do ./$(PROG_NAME) -h localhost -p 2023 -m udp <$$test.in >$$test.out; if diff -q $$test.out $$test.ref >/dev/null; then echo "Test OK : $$test"; else echo "Test FAIL : $$test"; fi done
 
 clean:
 	rm -rf $(PROG_NAME)*
 	rm -rf *.o
+	rm -rf testData/*.out
 
 zip: clean
 	zip -r xgerge01.zip *.h *.c testData Makefile README.md
