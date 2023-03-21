@@ -40,8 +40,10 @@
 
 #endif // _WIN32 || _WIN64
 
+// message can be max 255 characters long due to protocol definition
 #define BUFFFER_SIZE 255
 
+// allowed modes of communication
 #define MODE_UDP 1
 #define MODE_TCP 2
 

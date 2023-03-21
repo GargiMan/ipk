@@ -10,7 +10,6 @@
 
 /**
  * @brief Prints an error message, free used memory and exits the program.
- *
  * @param errcode error exit code
  * @param msg message to print
  * @param ... message arguments
@@ -29,7 +28,6 @@ void error_exit(errorCodes_t errcode, char *msg, ...)
 
 /**
  * @brief Prints a warning message.
- *
  * @param msg message to print
  * @param ... message arguments
  */

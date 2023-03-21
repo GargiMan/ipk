@@ -8,9 +8,11 @@
 
 #include "client.h"
 
+// op codes
 #define OP_REQ 0
 #define OP_RESP 1
 
+// status codes
 #define STATUS_OK 0
 #define STATUS_ERR 1
 
@@ -19,12 +21,21 @@ int client_socket;
 struct sockaddr_in server_address;
 bool server_closed = false;
 
+/**
+ * @brief Signal handler for SIGINT
+ */
 void sig_handler()
 {
     client_close();
     exit(0);
 }
 
+/**
+ * @brief Initialize the client socket and the connection with the server
+ * @param host server host
+ * @param port server port
+ * @param mode communication mode
+ */
 void client_init(char *host, int port, int mode)
 {
     client_mode = mode;
@@ -58,6 +69,9 @@ void client_init(char *host, int port, int mode)
     }
 }
 
+/**
+ * @brief Close the client socket and the connection with server
+ */
 void client_close()
 {
     if (client_mode == MODE_TCP && !server_closed)
@@ -69,6 +83,11 @@ void client_close()
     close(client_socket);
 }
 
+/**
+ * @brief Get the tcp response message
+ * @param request message to send
+ * @param response message received
+ */
 void get_tcp_response(char *request, char *response)
 {
     // Add newline character if missing
@@ -96,6 +115,11 @@ void get_tcp_response(char *request, char *response)
     }
 }
 
+/**
+ * @brief Get the udp response message
+ * @param request message to send
+ * @param response message received
+ */
 void get_udp_response(char *request, char *response)
 {
     socklen_t serverlen = sizeof(server_address);
@@ -154,6 +178,12 @@ void get_udp_response(char *request, char *response)
     }
 }
 
+/**
+ * @brief Get the response message from server based on client mode
+ *
+ * @param request message to be sent to server
+ * @param response message received from server
+ */
 void get_response(char *request, char *response)
 {
     if (client_mode == MODE_TCP)

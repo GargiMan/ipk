@@ -13,10 +13,14 @@
 #include "error.h"
 #include "client.h"
 
+// variables for client
 char *host;
 int port = 0;
 int mode = 0;
 
+/**
+ * @brief Prints help message
+ */
 void print_help()
 {
     printf("Usage: ipkcpc -h <host> -p <port> -m <mode>\n");
@@ -27,6 +31,11 @@ void print_help()
     printf("  --help       print this help and exit program\n");
 }
 
+/**
+ * @brief Parse command line arguments
+ * @param argc argument count
+ * @param argv argument values
+ */
 void parse_args(int argc, char *argv[])
 {
     for (int i = 1; i < argc; i++)
@@ -80,6 +89,9 @@ void parse_args(int argc, char *argv[])
     }
 }
 
+/**
+ * @brief Runs client program with given arguments based on calculator protocol description, reads input from stdin and sends it to server, then prints response from server to stdout
+ */
 void run_client()
 {
     client_init(host, port, mode);
@@ -88,6 +100,11 @@ void run_client()
     char response[BUFFFER_SIZE] = "";
     while (fgets(request, BUFFFER_SIZE, stdin) != NULL)
     {
+        if (strlen(request) > BUFFER_SIZE - 1)
+        {
+            error_exit(inputError, "Input too long, max input length is %d characters\n", BUFFER_SIZE - 1)
+        }
+
         get_response(request, response);
         printf("%s", response);
 
