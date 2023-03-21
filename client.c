@@ -96,22 +96,34 @@ void get_tcp_response(char *request, char *response)
         request[strlen(request)] = '\n';
     }
 
+    // Check if BYE was sent
+    if (strcmp(request, "BYE\n") == 0)
+    {
+        server_closed = true;
+    }
+
     // Send request to server
+    int send_fails = 0;
     while (send(client_socket, request, strlen(request), 0) == -1)
     {
+        if (++send_fails > MAX_TRANSFER_FAILS)
+        {
+            client_close();
+            error_exit(transferError, "Send failed %d times\n", send_fails);
+        }
         warning_print("Send failed\n");
     }
 
     // Receive response from server
+    int recv_fails = 0;
     while (recv(client_socket, response, BUFFER_SIZE, 0) == -1)
     {
+        if (++recv_fails > MAX_TRANSFER_FAILS)
+        {
+            client_close();
+            error_exit(transferError, "Receive failed %d times\n", recv_fails);
+        }
         warning_print("Receive failed\n");
-    }
-
-    // Check if BYE was sent
-    if (strcmp(response, "BYE\n") == 0)
-    {
-        server_closed = true;
     }
 }
 
@@ -138,14 +150,26 @@ void get_udp_response(char *request, char *response)
     request_packet[0] = OP_REQ;
 
     // Send request to server
+    int send_fails = 0;
     while (sendto(client_socket, request_packet, request_packet_len, 0, (struct sockaddr *)&server_address, serverlen) == -1)
     {
+        if (++send_fails > MAX_TRANSFER_FAILS)
+        {
+            client_close();
+            error_exit(transferError, "Send failed %d times\n", send_fails);
+        }
         warning_print("Send failed\n");
     }
 
     // Receive response from server
+    int recv_fails = 0;
     while (recvfrom(client_socket, response_packet, BUFFER_SIZE, 0, (struct sockaddr *)&server_address, &serverlen) == -1)
     {
+        if (++recv_fails > MAX_TRANSFER_FAILS)
+        {
+            client_close();
+            error_exit(transferError, "Receive failed %d times\n", recv_fails);
+        }
         warning_print("Receive failed\n");
     }
 

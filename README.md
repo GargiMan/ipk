@@ -33,7 +33,8 @@ During communication warning of failed operation can be printed to stderr.
 | 1    | Program argument error |
 | 2    | Program input error    |
 | 3    | Socket error           |
-| 4    | Signal handler error   |
+| 4    | Transfer error         |
+| 5    | Signal handler error   |
 
 ## Tests
 

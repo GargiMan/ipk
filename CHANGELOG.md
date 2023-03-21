@@ -8,7 +8,3 @@ Program was not tested on Windows platform and may not work properly, but requir
 - Program can be compiled on Unix based systems and Windows using `make` or `make ipkcpc`.
 - Program accepts arguments in any order and have additional optional `--help` argument.
 - Client code accepts hostnames and IPv4 addresses.
-
-### Known bugs
-
-- Client can stuck on communication with server if message is not sent or received properly.

@@ -18,7 +18,8 @@ typedef enum errorCodes
     argumentError = 1,
     inputError = 2,
     socketError = 3,
-    signalError = 4
+    transferError = 4,
+    signalError = 5
 } errorCodes_t;
 
 void error_exit(errorCodes_t errcode, char *msg, ...);
