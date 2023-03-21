@@ -51,7 +51,7 @@ void parse_args(int argc, char *argv[])
 
             if (*endptr != '\0' || port < 1 || port > 65535)
             {
-                error_exit(invalidArgument, "Invalid port, port must be a max 5 digit integer in range (0 - 65535)\n");
+                error_exit(argumentError, "Invalid port, port must be a max 5 digit integer in range (0 - 65535)\n");
             }
         }
         else if (strcmp(argv[i], "-m") == 0 && i < argc - 1)
@@ -67,7 +67,7 @@ void parse_args(int argc, char *argv[])
             }
             else
             {
-                error_exit(invalidArgument, "Invalid mode, allowed modes are 'udp' or 'tcp'\n");
+                error_exit(argumentError, "Invalid mode, allowed modes are 'udp' or 'tcp'\n");
             }
         }
         else if (strcmp(argv[i], "--help") == 0)
@@ -78,14 +78,14 @@ void parse_args(int argc, char *argv[])
         else
         {
             print_help();
-            error_exit(invalidArgument, "Unknown argument '%s'\n", argv[i]);
+            error_exit(argumentError, "Unknown argument '%s'\n", argv[i]);
         }
     }
 
     if (host == NULL || port == 0 || mode == 0)
     {
         print_help();
-        error_exit(invalidArgument, "Options -h, -p and -m are required\n");
+        error_exit(argumentError, "Options -h, -p and -m are required\n");
     }
 }
 

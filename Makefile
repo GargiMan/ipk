@@ -18,15 +18,10 @@ ifeq ($(OS),Windows_NT)
   	CCFLAGS += -lws2_32
 endif
 
-.PHONY: all program test-tcp test-udp clean zip
+.PHONY: program test-tcp test-udp clean zip
 
-all: program
-
-%.o: %.c
-	gcc $(CCFLAGS) -c $< -o $@
-
-program: $(SRC_FILES:%.c=%.o)
-	gcc $(CCFLAGS) $^ -o $(PROG_NAME)
+$(PROG_NAME): $(SRC_FILES)
+	gcc $(CCFLAGS) $(SRC_FILES) -o $(PROG_NAME)
 
 test-tcp:
 	@for test in $(TESTS_TCP:%.in=%); do ./$(PROG_NAME) -h $(HOST) -p $(PORT) -m tcp <$$test.in >$$test.out; if diff -q $$test.out $$test.ref >/dev/null; then echo "Test OK : $$test"; else echo "Test FAIL : $$test"; fi done
@@ -36,8 +31,8 @@ test-udp:
 
 clean:
 	rm -rf $(PROG_NAME)
-	rm -rf *.o
 	rm -rf testData/*.out
+	rm -rf $(LOGIN).zip
 
 zip: clean
-	zip -r xgerge01.zip *.h *.c testData Makefile README.md
+	zip -r $(LOGIN).zip *.h *.c testData Makefile README.md

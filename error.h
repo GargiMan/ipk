@@ -15,11 +15,10 @@
 
 typedef enum errorCodes
 {
-    invalidArgument = 1,
+    argumentError = 1,
     inputError = 2,
     socketError = 3,
-    signalError = 4,
-    internalError = 99
+    signalError = 4
 } errorCodes_t;
 
 void error_exit(errorCodes_t errcode, char *msg, ...);
