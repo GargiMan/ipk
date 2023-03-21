@@ -2,7 +2,7 @@
 # Marek Gergel (xgerge01)
 
 LOGIN = xgerge01
-PROG_NAME = ipkcp
+PROG_NAME = ipkcpc
 # -g for debug , -O2 for optimization (0 - disabled, 1 - less, 2 - more)
 CCFLAGS := -g -O2 -Wall -Wextra -std=c17 -pedantic
 HEAD_FILES := client.h error.h

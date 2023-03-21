@@ -20,16 +20,10 @@
 int client_mode;
 int client_socket;
 struct sockaddr_in server_address;
+bool server_closed = false;
 
 void sig_handler()
 {
-    char response[BUFFFER_SIZE] = "";
-    if (client_mode == MODE_TCP)
-    {
-        get_response("BYE\n", response);
-        printf("%s", response);
-    }
-    shutdown(client_socket, SHUT_RDWR);
     client_close();
     exit(0);
 }
@@ -53,37 +47,55 @@ void client_init(char *host, int port, int mode)
 
     if ((client_socket = socket(AF_INET, (client_mode == MODE_TCP ? SOCK_STREAM : SOCK_DGRAM), 0)) <= 0)
     {
-        error_exit(socketError, "Socket creation failed.\n");
+        error_exit(socketError, "Socket creation failed\n");
     }
 
-    if (client_mode == MODE_TCP && connect(client_socket, (const struct sockaddr *)&server_address, sizeof(server_address)) != 0)
+    if (connect(client_socket, (const struct sockaddr *)&server_address, sizeof(server_address)) != 0)
     {
-        error_exit(socketError, "Socket connection failed.\n");
+        error_exit(socketError, "Socket connection failed\n");
     }
 
     if (signal(SIGINT, sig_handler) == SIG_ERR)
     {
-        error_exit(signalError, "Signal handler registration failed.\n");
+        error_exit(signalError, "Signal handler registration failed\n");
     }
 }
 
 void client_close()
 {
+    if (client_mode == MODE_TCP && !server_closed)
+    {
+        char response[BUFFFER_SIZE] = "";
+        get_response("BYE\n", response);
+        printf("%s", response);
+    }
     close(client_socket);
 }
 
 void get_tcp_response(char *request, char *response)
 {
+    // Add newline character if missing
+    if (request[strlen(request) - 1] != '\n')
+    {
+        request[strlen(request)] = '\n';
+    }
+
     // Send request to server
     while (send(client_socket, request, strlen(request), 0) == -1)
     {
-        warning_print("Send failed.\n");
+        warning_print("Send failed\n");
     }
 
     // Receive response from server
     while (recv(client_socket, response, BUFFFER_SIZE, 0) == -1)
     {
-        warning_print("Receive failed.\n");
+        warning_print("Receive failed\n");
+    }
+
+    // Check if BYE was sent
+    if (strcmp(response, "BYE\n") == 0)
+    {
+        server_closed = true;
     }
 }
 
@@ -93,7 +105,11 @@ void get_udp_response(char *request, char *response)
     char request_packet[BUFFFER_SIZE + 2] = "";
     char response_packet[BUFFFER_SIZE + 3] = "";
 
-    request[strlen(request) - 1] = '\0'; // Remove newline character
+    // Remove newline character if present
+    if (request[strlen(request) - 1] == '\n')
+    {
+        request[strlen(request) - 1] = '\0';
+    }
 
     // Build request packet
     sprintf(request_packet, "%c%c%s", OP_RESP, (char)strlen(request), request);
@@ -103,13 +119,13 @@ void get_udp_response(char *request, char *response)
     // Send request to server
     while (sendto(client_socket, request_packet, request_packet_len, 0, (struct sockaddr *)&server_address, serverlen) == -1)
     {
-        warning_print("Send failed.\n");
+        warning_print("Send failed\n");
     }
 
     // Receive response from server
     while (recvfrom(client_socket, response_packet, BUFFFER_SIZE, 0, (struct sockaddr *)&server_address, &serverlen) == -1)
     {
-        warning_print("Receive failed.\n");
+        warning_print("Receive failed\n");
     }
 
     // Read response packet
@@ -123,7 +139,7 @@ void get_udp_response(char *request, char *response)
     // Check response packet
     if (op_code != OP_RESP)
     {
-        warning_print("Invalid response packet.\n");
+        warning_print("Invalid response packet\n");
     }
 
     // Read response message

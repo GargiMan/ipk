@@ -22,7 +22,7 @@ int mode = 0;
 
 void print_help()
 {
-    printf("Usage: ipkcp -h <host> -p <port> -m <mode>\n");
+    printf("Usage: ipkcpc -h <host> -p <port> -m <mode>\n");
     printf("Options:\n");
     printf("  -h <host>    server host name or IPv4 address\n");
     printf("  -p <port>    server port number\n");
@@ -83,14 +83,14 @@ void parse_args(int argc, char *argv[])
     }
 }
 
-void calculator_protocol()
+void run_client()
 {
     client_init(host, port, mode);
 
     char request[BUFFFER_SIZE] = "";
+    char response[BUFFFER_SIZE] = "";
     while (fgets(request, BUFFFER_SIZE, stdin) != NULL)
     {
-        char response[BUFFFER_SIZE] = "";
         get_response(request, response);
         printf("%s", response);
 
@@ -98,6 +98,9 @@ void calculator_protocol()
         {
             break;
         }
+
+        bzero(request, BUFFFER_SIZE);
+        bzero(response, BUFFFER_SIZE);
     }
 
     client_close();
@@ -107,7 +110,7 @@ int main(int argc, char *argv[])
 {
     parse_args(argc, argv);
 
-    calculator_protocol();
+    run_client();
 
     return 0;
 }
