@@ -4,9 +4,6 @@
  * @brief definition of functions and variables for error handling
  * @version 0.1
  * @date 2023-03-19
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include "error.h"

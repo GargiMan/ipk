@@ -1,12 +1,9 @@
 /**
  * @file main.c
  * @author Marek Gergel (xgerge01)
- * @brief main function for client side communication
+ * @brief main program for client side communication
  * @version 0.1
  * @date 2023-03-19
- *
- * @copyright Copyright (c) 2023
- *
  */
 
 #include <stdio.h>
