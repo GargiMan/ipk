@@ -16,8 +16,9 @@
 typedef enum errorCodes
 {
     invalidArgument = 1,
-    socketError = 2,
-    signalError = 3,
+    inputError = 2,
+    socketError = 3,
+    signalError = 4,
     internalError = 99
 } errorCodes_t;
 

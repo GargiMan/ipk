@@ -96,13 +96,13 @@ void run_client()
 {
     client_init(host, port, mode);
 
-    char request[BUFFFER_SIZE] = "";
-    char response[BUFFFER_SIZE] = "";
-    while (fgets(request, BUFFFER_SIZE, stdin) != NULL)
+    char request[BUFFER_SIZE] = "";
+    char response[BUFFER_SIZE] = "";
+    while (fgets(request, BUFFER_SIZE, stdin) != NULL)
     {
         if (strlen(request) > BUFFER_SIZE - 1)
         {
-            error_exit(inputError, "Input too long, max input length is %d characters\n", BUFFER_SIZE - 1)
+            error_exit(inputError, "Input line is too long, max line length is %d characters\n", BUFFER_SIZE - 1);
         }
 
         get_response(request, response);
@@ -113,8 +113,8 @@ void run_client()
             break;
         }
 
-        bzero(request, BUFFFER_SIZE);
-        bzero(response, BUFFFER_SIZE);
+        bzero(request, BUFFER_SIZE);
+        bzero(response, BUFFER_SIZE);
     }
 
     client_close();

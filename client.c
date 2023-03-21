@@ -76,7 +76,7 @@ void client_close()
 {
     if (client_mode == MODE_TCP && !server_closed)
     {
-        char response[BUFFFER_SIZE] = "";
+        char response[BUFFER_SIZE] = "";
         get_response("BYE\n", response);
         printf("%s", response);
     }
@@ -103,7 +103,7 @@ void get_tcp_response(char *request, char *response)
     }
 
     // Receive response from server
-    while (recv(client_socket, response, BUFFFER_SIZE, 0) == -1)
+    while (recv(client_socket, response, BUFFER_SIZE, 0) == -1)
     {
         warning_print("Receive failed\n");
     }
@@ -123,8 +123,8 @@ void get_tcp_response(char *request, char *response)
 void get_udp_response(char *request, char *response)
 {
     socklen_t serverlen = sizeof(server_address);
-    char request_packet[BUFFFER_SIZE + 2] = "";
-    char response_packet[BUFFFER_SIZE + 3] = "";
+    char request_packet[BUFFER_SIZE + 2] = "";
+    char response_packet[BUFFER_SIZE + 3] = "";
 
     // Remove newline character if present
     if (request[strlen(request) - 1] == '\n')
@@ -144,7 +144,7 @@ void get_udp_response(char *request, char *response)
     }
 
     // Receive response from server
-    while (recvfrom(client_socket, response_packet, BUFFFER_SIZE, 0, (struct sockaddr *)&server_address, &serverlen) == -1)
+    while (recvfrom(client_socket, response_packet, BUFFER_SIZE, 0, (struct sockaddr *)&server_address, &serverlen) == -1)
     {
         warning_print("Receive failed\n");
     }
