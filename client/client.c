@@ -190,13 +190,13 @@ void get_udp_response(char *request, char *response)
     // Read response message
     if (status_code != STATUS_OK)
     {
-        strcat(response, "ERR: ");
+        strcat(response, "ERR:");
         strcat(response, response_packet + 3);
         strcat(response, "\n");
     }
     else
     {
-        strcat(response, "OK: ");
+        strcat(response, "OK:");
         strcat(response, response_packet + 3);
         strcat(response, "\n");
     }
