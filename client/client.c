@@ -1,5 +1,5 @@
 /**
- * @file client.h
+ * @file client.c
  * @author Marek Gergel (xgerge01)
  * @brief definition of functions and variables for client side communication
  * @version 0.1
@@ -20,6 +20,7 @@ int client_mode;
 int client_socket;
 struct sockaddr_in server_address;
 bool server_closed = false;
+bool server_opened = false;
 
 /**
  * @brief Signal handler for SIGINT
@@ -74,7 +75,7 @@ void client_init(char *host, int port, int mode)
  */
 void client_close()
 {
-    if (client_mode == MODE_TCP && !server_closed)
+    if (client_mode == MODE_TCP && !server_closed && server_opened)
     {
         char response[BUFFER_SIZE] = "";
         get_response("BYE\n", response);
@@ -124,6 +125,12 @@ void get_tcp_response(char *request, char *response)
             error_exit(transferError, "Receive failed %d times\n", recv_fails);
         }
         warning_print("Receive failed\n");
+    }
+
+    // Check if HELLO was recieved
+    if (strcmp(response, "HELLO\n") == 0)
+    {
+        server_opened = true;
     }
 }
 
