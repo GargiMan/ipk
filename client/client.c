@@ -97,12 +97,6 @@ void get_tcp_response(char *request, char *response)
         request[strlen(request)] = '\n';
     }
 
-    // Check if BYE was sent
-    if (strcmp(request, "BYE\n") == 0)
-    {
-        server_closed = true;
-    }
-
     // Send request to server
     int send_fails = 0;
     while (send(client_socket, request, strlen(request), 0) == -1)
@@ -131,6 +125,11 @@ void get_tcp_response(char *request, char *response)
     if (strcmp(response, "HELLO\n") == 0)
     {
         server_opened = true;
+    }
+    // Check if BYE was recieved
+    if (strcmp(response, "BYE\n") == 0)
+    {
+        server_closed = true;
     }
 }
 
