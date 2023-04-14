@@ -1,0 +1,59 @@
+/**
+ * @file server.h
+ * @author Marek Gergel (xgerge01)
+ * @brief declaration of functions and variables for server side communication
+ * @version 0.1
+ * @date 2023-04-12
+ */
+
+#ifndef SERVER_H
+#define SERVER_H
+
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
+#include <strings.h>
+#include <regex.h>
+#include "error.h"
+
+#if defined(_WIN32) || defined(_WIN64) // windows
+
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <process.h>
+
+#define close(a) (void)closesocket(a)
+#define signal(a, b) SetConsoleCtrlHandler(b, true)
+#define socklen_t int
+#define SIGERR 0
+#define SIGINT CTRL_C_EVENT
+
+#else // unix
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <signal.h>
+#include <netdb.h>
+
+#define SO_REUSEPORT 15
+
+#endif // _WIN32 || _WIN64
+
+// message can be max 255 characters long due to protocol definition
+#define BUFFER_SIZE 255
+// max number of failed transfers before client exits
+#define MAX_TRANSFER_FAILS 100
+
+// allowed modes of communication
+#define MODE_UDP 1
+#define MODE_TCP 2
+
+void server_init(char *host, int port, int mode);
+int server_listen();
+void server_close();
+
+#endif // SERVER_H
