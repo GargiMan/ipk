@@ -52,8 +52,6 @@ void client_init(char *host, int port, int mode)
     bcopy((char *)server->h_addr_list[0], (char *)&server_address.sin_addr.s_addr, server->h_length);
     server_address.sin_port = htons(port);
 
-    // printf("INFO: Server socket: %s : %d \n", inet_ntoa(server_address.sin_addr), ntohs(server_address.sin_port));
-
     if ((client_socket = socket(AF_INET, (client_mode == MODE_TCP ? SOCK_STREAM : SOCK_DGRAM), 0)) <= 0)
     {
         error_exit(socketError, "Socket creation failed\n");
@@ -77,6 +75,7 @@ void client_close()
 {
     if (client_mode == MODE_TCP && !server_closed && server_opened)
     {
+        server_closed = true;
         char response[BUFFER_SIZE] = "";
         get_response("BYE\n", response);
         printf("%s", response);
@@ -101,7 +100,7 @@ void get_tcp_response(char *request, char *response)
     int send_fails = 0;
     while (send(client_socket, request, strlen(request), 0) == -1)
     {
-        if (++send_fails > MAX_TRANSFER_FAILS)
+        if (++send_fails >= MAX_TRANSFER_FAILS)
         {
             client_close();
             error_exit(transferError, "Send failed %d times\n", send_fails);
@@ -113,7 +112,7 @@ void get_tcp_response(char *request, char *response)
     int recv_fails = 0;
     while (recv(client_socket, response, BUFFER_SIZE, 0) == -1)
     {
-        if (++recv_fails > MAX_TRANSFER_FAILS)
+        if (++recv_fails >= MAX_TRANSFER_FAILS)
         {
             client_close();
             error_exit(transferError, "Receive failed %d times\n", recv_fails);
@@ -140,7 +139,8 @@ void get_tcp_response(char *request, char *response)
  */
 void get_udp_response(char *request, char *response)
 {
-    socklen_t serverlen = sizeof(server_address);
+    socklen_t server_adress_len = sizeof(server_address);
+
     char request_packet[BUFFER_SIZE + 2] = "";
     char response_packet[BUFFER_SIZE + 3] = "";
 
@@ -157,9 +157,9 @@ void get_udp_response(char *request, char *response)
 
     // Send request to server
     int send_fails = 0;
-    while (sendto(client_socket, request_packet, request_packet_len, 0, (struct sockaddr *)&server_address, serverlen) == -1)
+    while (sendto(client_socket, request_packet, request_packet_len, 0, (struct sockaddr *)&server_address, server_adress_len) == -1)
     {
-        if (++send_fails > MAX_TRANSFER_FAILS)
+        if (++send_fails >= MAX_TRANSFER_FAILS)
         {
             client_close();
             error_exit(transferError, "Send failed %d times\n", send_fails);
@@ -169,9 +169,9 @@ void get_udp_response(char *request, char *response)
 
     // Receive response from server
     int recv_fails = 0;
-    while (recvfrom(client_socket, response_packet, BUFFER_SIZE, 0, (struct sockaddr *)&server_address, &serverlen) == -1)
+    while (recvfrom(client_socket, response_packet, BUFFER_SIZE, 0, (struct sockaddr *)&server_address, &server_adress_len) == -1)
     {
-        if (++recv_fails > MAX_TRANSFER_FAILS)
+        if (++recv_fails >= MAX_TRANSFER_FAILS)
         {
             client_close();
             error_exit(transferError, "Receive failed %d times\n", recv_fails);
@@ -210,7 +210,6 @@ void get_udp_response(char *request, char *response)
 
 /**
  * @brief Get the response message from server based on client mode
- *
  * @param request message to be sent to server
  * @param response message received from server
  */
