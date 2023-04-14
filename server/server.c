@@ -25,9 +25,7 @@ int server_mode;
 int server_socket;
 int comm_socket;
 struct sockaddr_in server_address;
-char str[INET_ADDRSTRLEN];
 bool server_opened = false;
-int status = STATUS_OK;
 
 /**
  * @brief Signal handler for SIGINT
@@ -55,7 +53,7 @@ int calculate(char *expression, char *result)
     if (regexec(&regex, expression, 6, match, 0))
     {
         regfree(&regex);
-        strcpy(result, "Could not parse expression");
+        strcpy(result, "Could not parse the message");
         return 1;
     }
     regfree(&regex);
@@ -124,7 +122,7 @@ int calculate(char *expression, char *result)
         case '/':
             if (operands[i] == 0)
             {
-                strcpy(result, "Zero division");
+                strcpy(result, "Could not parse the message");
                 return 1;
             }
             result_i /= operands[i];
@@ -140,10 +138,11 @@ int calculate(char *expression, char *result)
  * @brief Validates the request and stores the response in the response parameter according to the protocol
  * @param request request to validate
  * @param response response to the request
+ * @return int 1 if error or connection should be closed after the response, 0 otherwise
  */
-void calculator_protocol(char *request, char *response)
+int calculator_protocol(char *request, char *response)
 {
-    printf("C(%d): %s%c", comm_socket, request, request[strlen(request) - 1] == '\n' ? '\0' : '\n');
+    int status = STATUS_OK;
 
     if (server_mode == MODE_TCP)
     {
@@ -151,7 +150,7 @@ void calculator_protocol(char *request, char *response)
         {
             server_opened = true;
             strcpy(response, "HELLO\n");
-            return;
+            return 0;
         }
         else if (strncmp("SOLVE ", request, 6) == 0 && request[strlen(request) - 1] == '\n')
         {
@@ -161,22 +160,34 @@ void calculator_protocol(char *request, char *response)
             if ((status = calculate(request, result)))
             {
                 strcpy(response, "BYE\n");
-                return;
+                return status;
             }
             sprintf(response, "RESULT %s\n", result);
-            return;
+            return status;
         }
         else
         {
             strcpy(response, "BYE\n");
-            return;
+            return 1;
         }
     }
     else
     {
         char result[BUFFER_SIZE] = "";
-        status = calculate(request, result);
-        strcpy(response, result);
+        if (request[0] != OP_REQ || request[1] != (char)strlen(request + 2))
+        {
+            status = 1;
+            strcpy(result, "Could not parse the message");
+        }
+        else
+        {
+            status = calculate(request + 2, result);
+        }
+
+        response[0] = OP_RESP;
+        response[1] = status;
+        sprintf(response + 2, "%c%s", (char)strlen(result), result);
+        return status;
     }
 }
 
@@ -200,8 +211,6 @@ void server_init(char *host, int port, int mode)
     server_address.sin_family = AF_INET;
     bcopy((char *)server->h_addr_list[0], (char *)&server_address.sin_addr.s_addr, server->h_length);
     server_address.sin_port = htons(port);
-
-    // printf("INFO: Server socket: %s : %d \n", inet_ntoa(server_address.sin_addr), ntohs(server_address.sin_port));
 
     if ((server_socket = socket(AF_INET, server_mode == MODE_TCP ? SOCK_STREAM : SOCK_DGRAM, 0)) < 0)
     {
@@ -240,35 +249,29 @@ void server_close()
 }
 
 /**
- * @brief Listens for incoming connections and handles them
+ * @brief Listens for incoming TCP connections and handles them
  * @return int 0 if the server is closed, 1 otherwise
  */
-int server_listen()
+int server_listen_tcp()
 {
-    struct sockaddr_in server_address_client;
-    socklen_t server_address_client_len = sizeof(server_address_client);
+    struct sockaddr_in client_address;
+    socklen_t client_address_len = sizeof(client_address);
 
     server_opened = false;
 
-    comm_socket = accept(server_socket, (struct sockaddr *)&server_address_client, &server_address_client_len);
+    comm_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_address_len);
     if (comm_socket > 0)
     {
-        // debug
-        if (inet_ntop(AF_INET, &server_address_client.sin_addr, str, sizeof(str)))
-        {
-            printf("INFO: New connection: %s , %d\n", str, ntohs(server_address_client.sin_port));
-        }
-
         char request[BUFFER_SIZE] = "";
         char response[BUFFER_SIZE] = "";
 
         while (recv(comm_socket, request, BUFFER_SIZE, 0) > 0)
         {
-            calculator_protocol(request, response);
+            int status = calculator_protocol(request, response);
 
             send(comm_socket, response, strlen(response), 0);
 
-            if (strcmp("BYE\n", response) == 0)
+            if (status)
             {
                 break;
             }
@@ -284,6 +287,42 @@ int server_listen()
     }
 }
 
-// TODO list
-// ! multiple clients (describe in docs)
-// ! signal quit tcp comm (check if needed)
+/**
+ * @brief Listens for incoming UDP messages and handles them
+ * @return int 0 if the server is closed, 1 otherwise
+ */
+int server_listen_udp()
+{
+    struct sockaddr_in client_address;
+    socklen_t client_address_len = sizeof(client_address);
+
+    char request[BUFFER_SIZE + 2] = "";
+    char response[BUFFER_SIZE + 3] = "";
+
+    if (recvfrom(server_socket, request, BUFFER_SIZE + 2, 0, (struct sockaddr *)&client_address, &client_address_len) > 0)
+    {
+        (void)calculator_protocol(request, response);
+
+        sendto(server_socket, response, strlen(response + 2) + 2, 0, (struct sockaddr *)&client_address, client_address_len);
+
+        bzero(request, sizeof(request));
+        bzero(response, sizeof(response));
+    }
+    return 1;
+}
+
+/**
+ * @brief Listens for incoming messages and handles them
+ * @return int 0 if the server is closed, 1 otherwise
+ */
+int server_listen()
+{
+    if (server_mode == MODE_TCP)
+    {
+        return server_listen_tcp();
+    }
+    else
+    {
+        return server_listen_udp();
+    }
+}
