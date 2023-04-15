@@ -23,9 +23,13 @@
 
 int server_mode;
 int server_socket;
-int comm_socket;
-struct sockaddr_in server_address;
-bool server_opened = false;
+int client_socket[MAX_CLIENTS];
+bool client_opened[MAX_CLIENTS];
+int num_clients = 0;
+int i = 0;
+fd_set read_fds;
+struct sockaddr_in address;
+socklen_t address_len = sizeof(address);
 
 /**
  * @brief Signal handler for SIGINT
@@ -105,7 +109,7 @@ int calculate(char *expression, char *result)
     }
 
     // evaluate expression
-    unsigned int result_i = operands[0];
+    int result_i = operands[0];
     for (int i = 1; i < num_operands; i++)
     {
         switch (operator)
@@ -115,6 +119,11 @@ int calculate(char *expression, char *result)
             break;
         case '-':
             result_i -= operands[i];
+            if (result_i < 0)
+            {
+                strcpy(result, "Could not parse the message");
+                return 1;
+            }
             break;
         case '*':
             result_i *= operands[i];
@@ -142,13 +151,21 @@ int calculate(char *expression, char *result)
  */
 int calculator_protocol(char *request, char *response)
 {
+    // printf("C(%d): %s%c", i, server_mode == MODE_TCP ? request : request + 2, request[strlen(request) - 1] == '\n' ? '\0' : '\n');
+
     int status = STATUS_OK;
+
+    // convert to uppercase
+    for (int i = 0; request[i]; i++)
+    {
+        request[i] = toupper(request[i]);
+    }
 
     if (server_mode == MODE_TCP)
     {
-        if (strcmp("HELLO\n", request) == 0 && !server_opened)
+        if (strcmp("HELLO\n", request) == 0 && !client_opened[i])
         {
-            server_opened = true;
+            client_opened[i] = true;
             strcpy(response, "HELLO\n");
             return 0;
         }
@@ -192,6 +209,22 @@ int calculator_protocol(char *request, char *response)
 }
 
 /**
+ * @brief Closes the client socket
+ * @param index index of the client socket in the client_socket array
+ */
+void client_close(int index)
+{
+    close(client_socket[index]);
+    FD_CLR(client_socket[index], &read_fds);
+    for (int i = index; i < num_clients - 1; i++)
+    {
+        client_socket[i] = client_socket[i + 1];
+        client_opened[i] = client_opened[i + 1];
+    }
+    num_clients--;
+}
+
+/**
  * @brief Initializes the server socket
  * @param host server host name or IPv4 address
  * @param port server port number
@@ -207,10 +240,10 @@ void server_init(char *host, int port, int mode)
         error_exit(socketError, "Host '%s' not found\n", host);
     }
 
-    bzero((char *)&server_address, sizeof(server_address));
-    server_address.sin_family = AF_INET;
-    bcopy((char *)server->h_addr_list[0], (char *)&server_address.sin_addr.s_addr, server->h_length);
-    server_address.sin_port = htons(port);
+    bzero((char *)&address, address_len);
+    address.sin_family = AF_INET;
+    bcopy((char *)server->h_addr_list[0], (char *)&address.sin_addr.s_addr, server->h_length);
+    address.sin_port = htons(port);
 
     if ((server_socket = socket(AF_INET, server_mode == MODE_TCP ? SOCK_STREAM : SOCK_DGRAM, 0)) < 0)
     {
@@ -224,12 +257,12 @@ void server_init(char *host, int port, int mode)
         error_exit(socketError, "Socket options change failed\n");
     }
 
-    if (bind(server_socket, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
+    if (bind(server_socket, (struct sockaddr *)&address, address_len) < 0)
     {
         error_exit(socketError, "Socket binding to address failed\n");
     }
 
-    if (server_mode == MODE_TCP && listen(server_socket, 5) < 0)
+    if (server_mode == MODE_TCP && listen(server_socket, MAX_CLIENTS) < 0)
     {
         error_exit(socketError, "Socket listening failed\n");
     }
@@ -241,88 +274,154 @@ void server_init(char *host, int port, int mode)
 }
 
 /**
- * @brief Closes the server socket
+ * @brief Closes the server socket and all client sockets
  */
 void server_close()
 {
+    if (server_mode == MODE_TCP)
+    {
+        for (i = 0; i < num_clients; i++)
+        {
+            if (client_opened[i])
+            {
+                char response[BUFFER_SIZE] = "BYE\n";
+                send(client_socket[i], response, strlen(response), 0);
+                client_close(i);
+                i--;
+            }
+        }
+    }
     close(server_socket);
 }
 
 /**
- * @brief Listens for incoming TCP connections and handles them
- * @return int 0 if the server is closed, 1 otherwise
+ * @brief Listens for incoming TCP packets and handles them
  */
-int server_listen_tcp()
+void server_listen_tcp()
 {
-    struct sockaddr_in client_address;
-    socklen_t client_address_len = sizeof(client_address);
-
-    server_opened = false;
-
-    comm_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_address_len);
-    if (comm_socket > 0)
+    while (true)
     {
-        char request[BUFFER_SIZE] = "";
-        char response[BUFFER_SIZE] = "";
+        FD_ZERO(&read_fds);
+        FD_SET(server_socket, &read_fds); // add server socket to the set
+        int max_fd = server_socket;
+        int current_socket;
 
-        while (recv(comm_socket, request, BUFFER_SIZE, 0) > 0)
+        for (i = 0; i < num_clients; i++)
         {
-            int status = calculator_protocol(request, response);
+            // socket descriptor
+            int current_socket = client_socket[i];
 
-            send(comm_socket, response, strlen(response), 0);
+            // if valid socket descriptor then add to read list
+            if (current_socket > 0)
+                FD_SET(current_socket, &read_fds);
 
-            if (status)
+            // highest file descriptor number, need it for the select function
+            if (current_socket > max_fd)
+                max_fd = current_socket;
+        }
+
+        // wait for socket activity
+        if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) < 0)
+        {
+            error_exit(socketError, "Socket select failed\n");
+        }
+
+        // handle new connections
+        if (FD_ISSET(server_socket, &read_fds))
+        {
+            if ((current_socket = accept(server_socket, (struct sockaddr *)&address, &address_len)) < 0)
             {
-                break;
+                error_exit(socketError, "Socket accept failed\n");
             }
 
-            bzero(request, sizeof(request));
-            bzero(response, sizeof(response));
+            // add new current_socket to client_sockets
+            if (num_clients < MAX_CLIENTS)
+            {
+                client_socket[num_clients] = current_socket;
+                client_opened[num_clients] = false;
+                num_clients++;
+            }
+            else
+            {
+                warning_print("Maximum number of clients reached\n");
+                close(current_socket);
+            }
         }
-        return 1;
-    }
-    else
-    {
-        return 0;
+
+        // handle clients
+        for (i = 0; i < num_clients; i++)
+        {
+            // socket not ready
+            if (!FD_ISSET(client_socket[i], &read_fds))
+            {
+                continue;
+            }
+
+            char request[BUFFER_SIZE] = "";
+            char response[BUFFER_SIZE] = "";
+
+            // handle client
+            if (recv(client_socket[i], request, BUFFER_SIZE, 0) <= 0)
+            {
+                client_close(i);
+                i--;
+            }
+            else
+            {
+                // handle request
+                int status = calculator_protocol(request, response);
+
+                // send response
+                send(client_socket[i], response, strlen(response), 0);
+
+                if (status)
+                {
+                    client_close(i);
+                    i--;
+                }
+            }
+        }
     }
 }
 
 /**
- * @brief Listens for incoming UDP messages and handles them
- * @return int 0 if the server is closed, 1 otherwise
+ * @brief Listens for incoming UDP packets and handles them
  */
-int server_listen_udp()
+void server_listen_udp()
 {
-    struct sockaddr_in client_address;
-    socklen_t client_address_len = sizeof(client_address);
-
-    char request[BUFFER_SIZE + 2] = "";
-    char response[BUFFER_SIZE + 3] = "";
-
-    if (recvfrom(server_socket, request, BUFFER_SIZE + 2, 0, (struct sockaddr *)&client_address, &client_address_len) > 0)
+    while (true)
     {
+        char request[BUFFER_SIZE + 2] = "";
+        char response[BUFFER_SIZE + 3] = "";
+
+        if (recvfrom(server_socket, request, BUFFER_SIZE + 2, 0, (struct sockaddr *)&address, &address_len) < 0)
+        {
+            warning_print("Receive failed\n");
+        }
+
         (void)calculator_protocol(request, response);
 
-        sendto(server_socket, response, strlen(response + 2) + 2, 0, (struct sockaddr *)&client_address, client_address_len);
+        if (sendto(server_socket, response, strlen(response + 2) + 2, 0, (struct sockaddr *)&address, address_len) < 0)
+        {
+            warning_print("Send failed\n");
+        }
 
         bzero(request, sizeof(request));
         bzero(response, sizeof(response));
     }
-    return 1;
 }
 
 /**
- * @brief Listens for incoming messages and handles them
- * @return int 0 if the server is closed, 1 otherwise
+ * @brief Listens for incoming packets and handles them
  */
-int server_listen()
+void server_listen()
 {
     if (server_mode == MODE_TCP)
     {
-        return server_listen_tcp();
+        server_listen_tcp();
     }
     else
     {
-        return server_listen_udp();
+        server_listen_udp();
     }
 }

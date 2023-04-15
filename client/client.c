@@ -18,7 +18,7 @@
 
 int client_mode;
 int client_socket;
-struct sockaddr_in server_address;
+struct sockaddr_in address;
 bool server_closed = false;
 bool server_opened = false;
 
@@ -47,17 +47,17 @@ void client_init(char *host, int port, int mode)
         error_exit(socketError, "Host '%s' not found\n", host);
     }
 
-    bzero((char *)&server_address, sizeof(server_address));
-    server_address.sin_family = AF_INET;
-    bcopy((char *)server->h_addr_list[0], (char *)&server_address.sin_addr.s_addr, server->h_length);
-    server_address.sin_port = htons(port);
+    bzero((char *)&address, sizeof(address));
+    address.sin_family = AF_INET;
+    bcopy((char *)server->h_addr_list[0], (char *)&address.sin_addr.s_addr, server->h_length);
+    address.sin_port = htons(port);
 
     if ((client_socket = socket(AF_INET, (client_mode == MODE_TCP ? SOCK_STREAM : SOCK_DGRAM), 0)) <= 0)
     {
         error_exit(socketError, "Socket creation failed\n");
     }
 
-    if (connect(client_socket, (const struct sockaddr *)&server_address, sizeof(server_address)) != 0)
+    if (connect(client_socket, (const struct sockaddr *)&address, sizeof(address)) != 0)
     {
         error_exit(socketError, "Socket connection failed\n");
     }
@@ -139,7 +139,7 @@ void get_tcp_response(char *request, char *response)
  */
 void get_udp_response(char *request, char *response)
 {
-    socklen_t server_adress_len = sizeof(server_address);
+    socklen_t address_len = sizeof(address);
 
     char request_packet[BUFFER_SIZE + 2] = "";
     char response_packet[BUFFER_SIZE + 3] = "";
@@ -157,7 +157,7 @@ void get_udp_response(char *request, char *response)
 
     // Send request to server
     int send_fails = 0;
-    while (sendto(client_socket, request_packet, request_packet_len, 0, (struct sockaddr *)&server_address, server_adress_len) == -1)
+    while (sendto(client_socket, request_packet, request_packet_len, 0, (struct sockaddr *)&address, address_len) == -1)
     {
         if (++send_fails >= MAX_TRANSFER_FAILS)
         {
@@ -169,7 +169,7 @@ void get_udp_response(char *request, char *response)
 
     // Receive response from server
     int recv_fails = 0;
-    while (recvfrom(client_socket, response_packet, BUFFER_SIZE, 0, (struct sockaddr *)&server_address, &server_adress_len) == -1)
+    while (recvfrom(client_socket, response_packet, BUFFER_SIZE, 0, (struct sockaddr *)&address, &address_len) == -1)
     {
         if (++recv_fails >= MAX_TRANSFER_FAILS)
         {

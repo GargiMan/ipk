@@ -43,7 +43,7 @@
 // message can be max 255 characters long due to protocol definition
 #define BUFFER_SIZE 255
 // max number of failed transfers before client exits
-#define MAX_TRANSFER_FAILS 100
+#define MAX_TRANSFER_FAILS 10
 
 // allowed modes of communication
 #define MODE_UDP 1

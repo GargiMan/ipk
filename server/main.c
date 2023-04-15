@@ -96,8 +96,7 @@ void run_server()
 {
     server_init(host, port, mode);
 
-    while (server_listen() != 0)
-        (void)0;
+    server_listen();
 
     server_close();
 }
