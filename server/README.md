@@ -1,6 +1,6 @@
 # IPK Project 2: IPK Calculator Protocol
 
-Server for IPK Calculator Protocol[1] with TCP and UDP support.
+Server for IPK Calculator Protocol[2] with TCP and UDP support.
 
 ## Usage
 
@@ -38,18 +38,9 @@ During communication warning of failed operation can be printed to stderr.
 
 ## Tests
 
-Client-server communication was tested with input/output tests from `testData/` directory. Tests can be run using `make test-tcp` or `make test-udp` for TCP and UDP respectively.  
-Program needs to be compiled before running tests.
-
-Output of tests is stored in `testData/` directory in files with `.out` extension, reference output with `.ref` extension and input with `.in` extension.
-Reference output were created with `netcat` on reference environment.
-
-Test output is printed to `stdout` in following format: `Test <State> : <Test file>`
-
-| State | Description                                                |
-| ----- | ---------------------------------------------------------- |
-| OK    | Test passed                                                |
-| FAIL  | Test failed, test output `.out` does not match with `.ref` |
+Client-server communication was tested with client project[1] and this server running with `make listen-tcp` and `make listen-udp` for TCP and UDP respectively.
+Default test hostname and port of server are specified in `Makefile` of client/server.
+Server code needs to be compiled before running `make listen-tcp` or `make listen-udp`.
 
 ## Source code
 
@@ -58,8 +49,8 @@ Test output is printed to `stdout` in following format: `Test <State> : <Test fi
 | Target                  | Description                                                  |
 | ----------------------- | ------------------------------------------------------------ |
 | `make` or `make ipkcpd` | compiles project                                             |
-| `make test-tcp`         | runs TCP tests with specified host and port in Makefile      |
-| `make test-udp`         | runs UDP tests with specified host and port in Makefile      |
+| `make listen-tcp`       | runs TCP server with specified host and port in Makefile     |
+| `make listen-udp`       | runs UDP server with specified host and port in Makefile     |
 | `make clean`            | removes compilation files, tests outputs and created archive |
 | `make zip`              | creates zip archive of project                               |
 
@@ -71,14 +62,18 @@ All server communication protocol is handled in `run_server()` function.
 ### server.c, server.h
 
 Server code for IPK Calculator Protocol.
-Communication codes were adjusted from Gitea project repository[1].
-Correct client-server communication is established using `server_init(char* host, char* port, int mode)`, request-response messages are transfered using function `get_request(char* response, char* request)` and connection can be closed using `server_close()`. Server handles also signal `SIGINT` and end of `stdin` with correct connection closing.
+Communication codes were adjusted from Gitea project repository[2].
+Correct client-server communication is established using `server_init(char* host, char* port, int mode)`, request-response messages are transfered using function `server_listen()` and connection can be closed using `server_close()`. Server handles also signal `SIGINT` with correct connection closing.
 
 ### error.c, error.h
 
-Error handling functions created in another project for IJC.
 Files implements `warning_print(char *msg, ...)` and `error_exit(errorCodes_t errcode, char *msg, ...)` functions with message printing to `stderr` and error codes inside `errorCodes_t` structure.
 
 ## References
 
-[1] [Calculator protocol and example codes](https://git.fit.vutbr.cz/NESFIT/IPK-Projekty/src/branch/master)
+[1] [Client project](https://git.fit.vutbr.cz/xgerge01/ipk/src/branch/master/client)
+[2] [Calculator protocol and example codes](https://git.fit.vutbr.cz/NESFIT/IPK-Projekty/src/branch/master)  
+[3] [RFC 5234](https://www.rfc-editor.org/info/std68)  
+[4] [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/html/)  
+[5] [Transmission Control Protocol](https://en.wikipedia.org/wiki/Transmission_Control_Protocol)  
+[6] [User Datagram Protocol](https://en.wikipedia.org/wiki/User_Datagram_Protocol)
