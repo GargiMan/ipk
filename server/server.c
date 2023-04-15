@@ -363,6 +363,7 @@ void server_listen_tcp()
             // handle client
             if (recv(client_socket[i], request, BUFFER_SIZE, 0) <= 0)
             {
+                warning_print("Receive failed\n");
                 client_close(i);
                 i--;
             }
@@ -372,7 +373,10 @@ void server_listen_tcp()
                 int status = calculator_protocol(request, response);
 
                 // send response
-                send(client_socket[i], response, strlen(response), 0);
+                if (send(client_socket[i], response, strlen(response), 0) < 0)
+                {
+                    warning_print("Send failed\n");
+                }
 
                 if (status)
                 {
