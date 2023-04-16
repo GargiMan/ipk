@@ -163,16 +163,15 @@ int calculator_protocol(char *request, char *response)
 
     if (server_mode == MODE_TCP)
     {
-        if (strcmp("HELLO\n", request) == 0 && !client_opened[i])
+        if (strcmp("HELLO", request) == 0 && !client_opened[i])
         {
             client_opened[i] = true;
             strcpy(response, "HELLO\n");
             return 0;
         }
-        else if (strncmp("SOLVE ", request, 6) == 0 && request[strlen(request) - 1] == '\n')
+        else if (strncmp("SOLVE ", request, 6) == 0)
         {
             request = request + 6;
-            request[strlen(request) - 1] = '\0';
             char result[BUFFER_SIZE] = "";
             if ((status = calculate(request, result)))
             {
@@ -369,17 +368,26 @@ void server_listen_tcp()
             else
             {
                 // handle request
-                int status = calculator_protocol(request, response);
+                char *token = strtok(request, "\n");
 
-                // send response
-                if (send(client_socket[i], response, strlen(response), 0) < 0)
+                while (token != NULL)
                 {
-                    warning_print("Send failed\n");
-                }
+                    // calculate
+                    int status = calculator_protocol(token, response);
 
-                if (status)
-                {
-                    client_close(i);
+                    // send response
+                    if (send(client_socket[i], response, strlen(response), 0) < 0)
+                    {
+                        warning_print("Send failed\n");
+                    }
+
+                    if (status)
+                    {
+                        client_close(i);
+                        break;
+                    }
+
+                    token = strtok(NULL, "\n");
                 }
             }
         }
