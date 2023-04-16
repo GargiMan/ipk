@@ -222,6 +222,7 @@ void client_close(int index)
         client_opened[i] = client_opened[i + 1];
     }
     num_clients--;
+    i--;
 }
 
 /**
@@ -287,7 +288,6 @@ void server_close()
                 char response[BUFFER_SIZE] = "BYE\n";
                 send(client_socket[i], response, strlen(response), 0);
                 client_close(i);
-                i--;
             }
         }
     }
@@ -365,7 +365,6 @@ void server_listen_tcp()
             {
                 warning_print("Receive failed\n");
                 client_close(i);
-                i--;
             }
             else
             {
@@ -381,7 +380,6 @@ void server_listen_tcp()
                 if (status)
                 {
                     client_close(i);
-                    i--;
                 }
             }
         }
