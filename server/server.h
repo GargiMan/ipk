@@ -18,6 +18,8 @@
 
 #if defined(_WIN32) || defined(_WIN64) // windows
 
+#define WIN32_LEAN_AND_MEAN
+
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -49,8 +51,6 @@
 
 // message can be max 255 characters long due to protocol definition
 #define BUFFER_SIZE 255
-// max number of failed transfers before client exits
-#define MAX_TRANSFER_FAILS 10
 // max clients that can be connected at once
 #define MAX_CLIENTS 10
 
