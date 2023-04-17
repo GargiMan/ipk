@@ -32,4 +32,4 @@ clean:
 	rm -rf $(LOGIN).zip
 
 zip: clean
-	zip -r $(LOGIN).zip *.h *.c *.md Makefile LICENSE
+	zip -r $(LOGIN).zip *.h *.c *.md Makefile LICENSE testData
