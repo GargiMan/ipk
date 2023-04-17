@@ -34,10 +34,10 @@ Project can be compiled on Unix based systems and Windows using `make` or `make 
 
 ### Execution
 
-Program can be run using `ipkcpd -h <host> -p <port> -m <mode>` or `ipkcpc --help` for help.  
-Communication messages are read from `stdin` and written to `stdout`.
+Program can be run using `ipkcpd -h <host> -p <port> -m <mode>` or `ipkcpd --help` for help.  
 Program does not have any default values for host, port or mode and will exit with error if any of them is not specified.
 
+After correct execution of program, server will start listening on specified host and port with specified mode.
 During communication warning of failed operation can be printed to stderr.
 
 ### Arguments
